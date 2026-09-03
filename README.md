@@ -3,6 +3,18 @@
 > 记录粤文化的博客系统 —— 文章分享、粤语 AI 助手、粤语翻译与语音合成、社区互动与内容管理。
 > A blog dedicated to Cantonese culture — articles, a Cantonese AI assistant, translation & text-to-speech, community interactions and an admin dashboard.
 
+## 界面预览 / Screenshots
+
+| | | |
+|---|---|---|
+| ![首页](docs/screenshots/home.png) | ![文章列表页](docs/screenshots/articles.png) | ![文章阅读页](docs/screenshots/article.png) |
+| 首页 / Home | 文章列表 / Articles | 文章阅读 / Article |
+
+| | |
+|---|---|
+| ![写作页](docs/screenshots/write.png) | ![粤语 AI 助手](docs/screenshots/ai-chat.png) |
+| 写作 / Write | 粤语 AI 助手 / AI Assistant |
+
 ## 功能特色 / Features
 
 - 📰 **粤文化内容社区**：文章发布与浏览、点赞、收藏、评论、关注作者、分类与标签
@@ -42,6 +54,8 @@
 │       ├── application.properties    # 常规配置（密钥为占位符）
 │       └── avatars/                  # 默认头像
 ├── init-mysql.sql       # 建库 + 初始数据脚本
+├── docs/
+│   └── screenshots/     #   界面预览图
 ├── vite.config.js       # 前端开发代理（4000 → 8081）
 └── package.json
 ```
