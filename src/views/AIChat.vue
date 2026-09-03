@@ -72,7 +72,7 @@
               </div>
               <div class="ai-message-avatar user" v-if="msg.role === 'user'"></div>
             </div>
-            <div class="ai-message" v-if="isLoading">
+            <div class="ai-message" v-if="isThinking">
               <div class="ai-message-avatar bot"><span>粤</span></div>
               <div class="ai-bubble bot">
                 <div class="message-loading">
@@ -81,12 +81,9 @@
                 </div>
               </div>
             </div>
-            
-            <!-- 回到底部按钮 -->
-            <div class="scroll-to-bottom" v-if="showScrollToBottom" @click="scrollToBottom">
-              <span>↓</span>
-              <span>回到底部</span>
-            </div>
+
+            <!-- 上翻离开底部后，右下角浮现的小箭头（Telegram 式：不占布局、不遮挡正文） -->
+            <button class="ai-scroll-down" v-if="showScrollToBottom" @click="scrollToBottom" title="回到底部">↓</button>
           </div>
           <div class="ai-guest-mask" v-if="!isLoggedIn">
             请先 <a @click="$router.push('/login')">登录</a> 后使用 AI 文化问答功能
@@ -128,6 +125,8 @@ const chatHistory = ref([])
 const showScrollToBottom = ref(false)
 const currentChatId = ref(null)
 const isViewingHistory = ref(false)
+const stickToBottom = ref(true) // 是否自动跟随到最新内容（用户上翻会变 false）
+const isThinking = ref(false)    // 是否处于"等待 AI 首字回复"阶段
 
 const API_BASE_URL = '/api'
 
@@ -232,8 +231,9 @@ const sendMessage = async () => {
   scrollToBottom()
   
   isLoading.value = true
+  isThinking.value = true
   let aiAnswer = ''
-  
+
   try {
     const response = await fetch('/api/ai/yue-culture/chat/stream', {
       method: 'POST',
@@ -245,9 +245,11 @@ const sendMessage = async () => {
         category: ''
       })
     })
-    
+
     if (response.ok) {
       aiAnswer = await response.text()
+      // 拿到回复、开始流式输出后隐藏“思考中”占位
+      isThinking.value = false
       // 实现打字机效果
       await typeWriterEffect(aiAnswer)
       
@@ -265,7 +267,9 @@ const sendMessage = async () => {
     })
   } finally {
     isLoading.value = false
-    scrollToBottom()
+    isThinking.value = false
+    // 回答结束时也不强制拉回，若用户上翻阅读则保留其位置
+    await followIfAtBottom()
     isViewingHistory.value = false
   }
 }
@@ -373,35 +377,56 @@ const startNewChat = () => {
   }
 }
 
-// 打字机效果
+// 打字机效果（按块输出 + 智能滚动，避免高频重绘导致的卡顿闪烁）
 const typeWriterEffect = async (text) => {
   const timestamp = new Date()
   const messageIndex = messages.value.length
-  
+
   // 先添加一个空消息
-  messages.value.push({ 
-    role: 'ai', 
-    content: '', 
-    timestamp, 
-    relatedArticles: [] 
+  messages.value.push({
+    role: 'ai',
+    content: '',
+    timestamp,
+    relatedArticles: []
   })
-  
+
+  const step = 4      // 每轮追加的字符数
+  const typingSpeed = 18 // 每轮间隔（毫秒）
   let currentText = ''
-  const typingSpeed = 30 // 每个字符的打字速度（毫秒）
-  
-  for (let i = 0; i < text.length; i++) {
-    currentText += text[i]
+
+  for (let i = 0; i < text.length; i += step) {
+    currentText += text.slice(i, i + step)
     messages.value[messageIndex].content = currentText
-    await new Promise(resolve => setTimeout(resolve, typingSpeed))
-    scrollToBottom()
+    // 等待本轮渲染完成后再判断是否跟随滚动（避免闪烁）
+    await followIfAtBottom()
+    await sleep(typingSpeed)
   }
-  
+
   // 处理相关文章推荐（这里简化处理，实际可以从API返回中获取）
   const relatedArticles = []
   if (text.includes('粤韵志')) {
     relatedArticles.push('粤韵志网站有更多相关文章')
   }
   messages.value[messageIndex].relatedArticles = relatedArticles
+  // 相关内容追加后再次判断是否需滚动到底
+  await followIfAtBottom()
+}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+// AI 输出时的滚动策略：
+// 用户处于跟随状态（stickToBottom=true）→ 始终贴底跟随，即使内容瞬间长高也不打扰；
+// 用户上翻阅读 → 保留其位置并亮出“回到底部”按钮，等用户滚回底部即自动恢复跟随
+const followIfAtBottom = async () => {
+  await nextTick()
+  const el = messagesContainer.value
+  if (!el) return
+  if (stickToBottom.value) {
+    el.scrollTop = el.scrollHeight
+    showScrollToBottom.value = false
+  } else {
+    showScrollToBottom.value = true
+  }
 }
 
 const sendSuggestion = (text) => {
@@ -444,6 +469,7 @@ const formatTime = (date) => {
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesContainer.value) {
+    stickToBottom.value = true
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
     showScrollToBottom.value = false
   }
@@ -456,15 +482,15 @@ const scrollToTop = async () => {
   }
 }
 
-// 监听滚动事件
+// 监听滚动事件：由用户的真实滚动位置维护"是否跟随"状态，并控制按钮显隐
 const handleScroll = () => {
   if (!messagesContainer.value) return
-  
+
   const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
-  const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
-  
-  // 如果不在底部附近、正在加载且不是查看历史记录，显示回到底部按钮
-  showScrollToBottom.value = isLoading.value && !isNearBottom && !isViewingHistory.value
+  const atBottom = scrollHeight - scrollTop - clientHeight < 60
+
+  stickToBottom.value = atBottom
+  showScrollToBottom.value = !atBottom && !isViewingHistory.value
 }
 
 onMounted(() => {
@@ -760,33 +786,32 @@ onMounted(() => {
   position: relative;
 }
 
-.scroll-to-bottom {
+/* “回到最新”小箭头（Telegram 式）：仅在用户上翻离开底部时浮现；绝对定位不占布局，
+   且消息气泡最大宽 70%，右下角区域基本留空，不会遮挡正文 */
+.ai-scroll-down {
   position: absolute;
-  bottom: 16px;
   right: 16px;
-  background: #C0392B;
+  bottom: 16px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(26, 16, 8, 0.75);
   color: #fff;
-  padding: 8px 16px;
-  border-radius: 20px;
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.3);
-  transition: all 0.3s;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s, transform 0.15s;
   z-index: 10;
 }
 
-.scroll-to-bottom:hover {
-  background: #E04B3A;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.4);
-}
-
-.scroll-to-bottom span:first-child {
-  font-size: 16px;
-  font-weight: bold;
+.ai-scroll-down:hover {
+  background: #C0392B;
+  transform: translateY(-1px);
 }
 
 .ai-message {
@@ -796,7 +821,8 @@ onMounted(() => {
 }
 
 .ai-message.user {
-  flex-direction: row-reverse;
+  /* 仿微信：自己的消息整体靠右，头像在最右侧、气泡在头像左边 */
+  justify-content: flex-end;
 }
 
 .ai-message-avatar {
