@@ -94,3 +94,9 @@ npm run dev                # http://localhost:4000
 
 - 后端 `backend/src/main/resources/schema.sql`、`init-mysql.sql` 为结构与初始化脚本，供参考；完整初始数据见根目录 `init-mysql.sql`。
 - 管理后台路径 `/admin`，需要管理员账号登录。
+
+## 项目复盘 / Project Retrospective
+
+作者对做这个项目全过程的真实复盘 —— 技术选型的取舍、与 AI 协作的方法论、全栈开发节奏、需求管理与个人成长：
+
+> [📖 粤韵志复盘（开发心得 / Retrospective）](粤韵志复盘.md)
