@@ -1,0 +1,48 @@
+# ===== 依赖 / 构建产物 =====
+node_modules/
+dist/
+backend/target/
+
+# ===== 运行时数据（用户上传内容，非源码） =====
+backend/uploads/
+
+# ===== 本机工具配置 =====
+.cursor/
+.idea/
+.vscode/
+*.iml
+
+# ===== 密钥：真实密钥文件一律不入库 =====
+# 后端密钥请放在本地 application-secret.properties（由 application.properties 可选引入）
+backend/src/main/resources/application-secret.properties
+backend/src/main/resources/application-local.properties
+*.local.properties
+.env
+.env.*
+
+# ===== 系统 / 日志 =====
+*.log
+.DS_Store
+Thumbs.db
+
+# ===== 包管理器：本项目以 npm 为准，忽略 yarn 生成的锁文件 =====
+yarn.lock
+
+# ===== 根目录散落的开发草稿（不入库，保持仓库干净） =====
+/*.png
+/*.docx
+/图标/
+/gsap-skills-main/
+/scripts/
+/featured.json
+/粤韵志-*.html
+/test-*
+/check-join.sql
+/PROJECT_GUIDE.md
+/功能清单.md
+/插入数据.md
+/数据库表格设计.md
+/粤文化AI助手Prompt.md
+/项目实现报告.md
+/项目说明书.md
+/粤韵志复盘.md

@@ -1,0 +1,11 @@
+:root {
+  --v:#C0392B;--v2:#E04B3A;--vd:rgba(192,57,43,.10);--vd2:rgba(192,57,43,.06);
+  --g:#D4A017;--gd:#A67C00;--glow:rgba(212,160,23,.14);
+  --ink:#1A1008;--ink1:rgba(26,16,8,.07);
+  --jade:#2E7D6A;--jd:rgba(46,125,106,.10);
+  --dim:#6B5744;--dim5:rgba(107,87,68,.5);--dim2:rgba(107,87,68,.18);
+  --rice:#F5EDD6;--cream:#FBF6EC;--white:#fff;
+  --bd:#D4B896;--bd2:#EAD8BE;
+  --sh:0 2px 12px rgba(26,16,8,.07);--sh2:0 6px 24px rgba(26,16,8,.11);
+  --r:3px;--r2:6px;--sb:220px;
+}
